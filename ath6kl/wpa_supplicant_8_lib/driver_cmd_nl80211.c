@@ -253,6 +253,10 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 		return 0; /* Ignore it */
 	} else if(os_strncmp(cmd, "RXFILTER-REMOVE ", 16) == 0) {
 		return 0; /* Ignore it */
+	} else if(os_strncmp(cmd, "SETSUSPENDMODE ", 15) == 0) {
+		return 0; /* Ignore it */
+	} else if(os_strncmp(cmd, "WLS_BATCHING ", 13) == 0) {
+		return 0; /* Ignore it */
 	} else if(os_strncmp(cmd, "BTCOEXMODE ", 11) == 0) {
                 int mode;
                 if (sscanf(cmd, "%*s %d", &mode)==1) {
