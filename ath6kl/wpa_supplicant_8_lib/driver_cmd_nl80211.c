@@ -10,7 +10,7 @@
  *
  */
 
-#include "driver_nl80211.h"
+#include "hardware_legacy/driver_nl80211.h"
 #include "driver_cmd_common.h"
 
 #include "wpa_supplicant_i.h"
