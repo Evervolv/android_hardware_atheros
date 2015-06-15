@@ -18,8 +18,6 @@
 #endif
 
 
-#define MAX_WPSP2PIE_CMD_SIZE		512
-
 typedef struct android_wifi_priv_cmd {
 	char *buf;
 	int used_len;
@@ -35,6 +33,27 @@ static void wpa_driver_send_hang_msg(struct wpa_driver_nl80211_data *drv)
 	if (drv_errors > DRV_NUMBER_SEQUENTIAL_ERRORS) {
 		drv_errors = 0;
 		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
+	}
+}
+
+static void wpa_driver_notify_country_change(void *ctx, char *cmd)
+{
+	if ((os_strncasecmp(cmd, "COUNTRY", 7) == 0) ||
+	    (os_strncasecmp(cmd, "SETBAND", 7) == 0)) {
+		union wpa_event_data event;
+
+		os_memset(&event, 0, sizeof(event));
+		event.channel_list_changed.initiator = REGDOM_SET_BY_USER;
+		if (os_strncasecmp(cmd, "COUNTRY", 7) == 0) {
+			event.channel_list_changed.type = REGDOM_TYPE_COUNTRY;
+			if (os_strlen(cmd) > 9) {
+				event.channel_list_changed.alpha2[0] = cmd[8];
+				event.channel_list_changed.alpha2[1] = cmd[9];
+			}
+		} else {
+			event.channel_list_changed.type = REGDOM_TYPE_UNKNOWN;
+		}
+		wpa_supplicant_event(ctx, EVENT_CHANNEL_LIST_CHANGED, &event);
 	}
 }
 
@@ -68,13 +87,7 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 		return 0; /* Ignore it */
 	} else if(os_strncmp(cmd, "RXFILTER-REMOVE ", 16) == 0) {
 		return 0; /* Ignore it */
-	} else if(os_strncmp(cmd, "COUNTRY ", 8) == 0) {
-		return 0; /* Ignore it */
-	} else if(os_strncmp(cmd, "SETBAND ", 8) == 0) {
-		return 0; /* Ignore it */
 	} else if(os_strncmp(cmd, "SETSUSPENDMODE ", 15) == 0) {
-		return 0; /* Ignore it */
-	} else if(os_strncmp(cmd, "WLS_BATCHING ", 13) == 0) {
 		return 0; /* Ignore it */
 	} else if(os_strncmp(cmd, "BTCOEXSCAN-START", 16) == 0) {
 		return 0; /* Ignore it */
@@ -111,7 +124,7 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 		os_memcpy(buf, cmd, strlen(cmd) + 1);
 		memset(&ifr, 0, sizeof(ifr));
 		memset(&priv_cmd, 0, sizeof(priv_cmd));
-		strncpy(ifr.ifr_name, bss->ifname, IFNAMSIZ);
+		os_strlcpy(ifr.ifr_name, bss->ifname, IFNAMSIZ);
 
 		priv_cmd.buf = buf;
 		priv_cmd.used_len = buf_len;
@@ -126,12 +139,10 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 			ret = 0;
 			if ((os_strcasecmp(cmd, "LINKSPEED") == 0) ||
 			    (os_strcasecmp(cmd, "RSSI") == 0) ||
-			    (os_strcasecmp(cmd, "GETBAND") == 0) )
+			    (os_strcasecmp(cmd, "GETBAND") == 0) ||
+			    (os_strncasecmp(cmd, "WLS_BATCHING", 12) == 0))
 				ret = strlen(buf);
-
-			else if (os_strncasecmp(cmd, "COUNTRY", 7) == 0)
-				wpa_supplicant_event(drv->ctx,
-					EVENT_CHANNEL_LIST_CHANGED, NULL);
+			wpa_driver_notify_country_change(drv->ctx, cmd);
 			wpa_printf(MSG_DEBUG, "%s %s len = %d, %d", __func__, buf, ret, strlen(buf));
 		}
 	}
@@ -168,12 +179,13 @@ int wpa_driver_set_ap_wps_p2p_ie(void *priv, const struct wpabuf *beacon,
 				 const struct wpabuf *proberesp,
 				 const struct wpabuf *assocresp)
 {
-	char buf[MAX_WPSP2PIE_CMD_SIZE];
-	struct wpabuf *ap_wps_p2p_ie = NULL;
+	char *buf;
+	const struct wpabuf *ap_wps_p2p_ie = NULL;
+
 	char *_cmd = "SET_AP_WPS_P2P_IE";
 	char *pbuf;
 	int ret = 0;
-	int i;
+	int i, buf_len;
 	struct cmd_desc {
 		int cmd;
 		const struct wpabuf *src;
@@ -186,20 +198,28 @@ int wpa_driver_set_ap_wps_p2p_ie(void *priv, const struct wpabuf *beacon,
 
 	wpa_printf(MSG_DEBUG, "%s: Entry", __func__);
 	for (i = 0; cmd_arr[i].cmd != -1; i++) {
-		os_memset(buf, 0, sizeof(buf));
-		pbuf = buf;
-		pbuf += sprintf(pbuf, "%s %d", _cmd, cmd_arr[i].cmd);
-		*pbuf++ = '\0';
-		ap_wps_p2p_ie = cmd_arr[i].src ?
-			wpabuf_dup(cmd_arr[i].src) : NULL;
+		ap_wps_p2p_ie = cmd_arr[i].src;
 		if (ap_wps_p2p_ie) {
-			os_memcpy(pbuf, wpabuf_head(ap_wps_p2p_ie), wpabuf_len(ap_wps_p2p_ie));
-			ret = wpa_driver_nl80211_driver_cmd(priv, buf, buf,
-				strlen(_cmd) + 3 + wpabuf_len(ap_wps_p2p_ie));
-			wpabuf_free(ap_wps_p2p_ie);
-			if (ret < 0)
+			buf_len = strlen(_cmd) + 3 + wpabuf_len(ap_wps_p2p_ie);
+			buf = os_zalloc(buf_len);
+			if (NULL == buf) {
+				wpa_printf(MSG_ERROR, "%s: Out of memory",
+					   __func__);
+				ret = -1;
 				break;
+			}
+		} else {
+			continue;
 		}
+		pbuf = buf;
+		pbuf += snprintf(pbuf, buf_len - wpabuf_len(ap_wps_p2p_ie),
+				 "%s %d",_cmd, cmd_arr[i].cmd);
+		*pbuf++ = '\0';
+		os_memcpy(pbuf, wpabuf_head(ap_wps_p2p_ie), wpabuf_len(ap_wps_p2p_ie));
+		ret = wpa_driver_nl80211_driver_cmd(priv, buf, buf, buf_len);
+		os_free(buf);
+		if (ret < 0)
+			break;
 	}
 
 	return ret;

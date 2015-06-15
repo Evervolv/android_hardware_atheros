@@ -151,7 +151,7 @@ int wpa_driver_wext_driver_cmd( void *priv, char *cmd, char *buf, size_t buf_len
     if (os_strcasecmp(cmd, "macaddr") == 0) {
         struct ifreq ifr;
         os_memset(&ifr, 0, sizeof(ifr));
-        os_strncpy(ifr.ifr_name, drv->ifname, IFNAMSIZ);
+        os_strlcpy(ifr.ifr_name, drv->ifname, IFNAMSIZ);
         if (ioctl(drv->ioctl_sock, SIOCGIFHWADDR, &ifr) < 0) {
             perror("ioctl[SIOCGIFHWADDR]");
             ret = -1;
@@ -179,7 +179,7 @@ int wpa_driver_wext_driver_cmd( void *priv, char *cmd, char *buf, size_t buf_len
     else if (os_strcasecmp(cmd, "linkspeed") == 0) {
         struct iwreq wrq;
         unsigned int linkspeed;
-        os_strncpy(wrq.ifr_name, drv->ifname, IFNAMSIZ);
+        os_strlcpy(wrq.ifr_name, drv->ifname, IFNAMSIZ);
         if (ioctl(drv->ioctl_sock, SIOCGIWRATE, &wrq) < 0) {
             perror("ioctl[SIOCGIWRATE]");
             ret = -1;
