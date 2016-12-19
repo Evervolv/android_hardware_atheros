@@ -15,6 +15,7 @@
 #
 
 ########################
+-include hardware/atheros/ath6kl/config/config-ath6kl.mk
 
 PRODUCT_COPY_FILES += \
     hardware/atheros/ath6kl/firmware/LICENSE.atheros_firmware:/system/etc/firmware/ath6k/LICENSE.atheros_firmware
