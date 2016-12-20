@@ -55,6 +55,7 @@ PRODUCT_COPY_FILES += \
     hardware/atheros/ath6kl/firmware/AR6003/hw2.1.1/athwlan.bin:/system/etc/firmware/ath6k/AR6003/hw2.1.1/athwlan.bin \
     hardware/atheros/ath6kl/firmware/AR6003/hw2.1.1/bdata.SD32.bin:/system/etc/firmware/ath6k/AR6003/hw2.1.1/bdata.SD32.bin \
     hardware/atheros/ath6kl/firmware/AR6003/hw2.1.1/otp.bin:/system/etc/firmware/ath6k/AR6003/hw2.1.1/otp.bin \
+    hardware/atheros/ath6kl/firmware/AR6003/hw2.1.1/fw-2.bin:/system/etc/firmware/ath6k/AR6003/hw2.1.1/fw-2.bin \
     hardware/atheros/ath6kl/firmware/AR6003/hw2.1.1/fw-3.bin:/system/etc/firmware/ath6k/AR6003/hw2.1.1/fw-3.bin \
     hardware/atheros/ath6kl/firmware/AR6003/hw2.1.1/bdata.SD32.bin:/system/etc/firmware/ath6k/AR6003/hw2.1.1/bdata.CUSTOM.bin \
     hardware/atheros/ath6kl/firmware/AR6003/hw2.1.1/bdata.SD32.bin:/system/etc/firmware/ath6k/AR6003/hw2.1.1/bdata.bin
