@@ -6,7 +6,7 @@
 
 #define LOG_TAG  "WifiHAL-ATH6kl"
 
-#include <utils/Log.h>
+#include <log/log.h>
 #include "nl80211_copy.h"
 #include "sync.h"
 

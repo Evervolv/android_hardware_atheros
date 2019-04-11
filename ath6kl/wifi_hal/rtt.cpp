@@ -13,7 +13,8 @@
 #include <netlink/object-api.h>
 #include <netlink/netlink.h>
 #include <netlink/socket.h>
-#include <netlink-types.h>
+#include <netlink-private/object-api.h>
+#include <netlink-private/types.h>
 
 #include "nl80211_copy.h"
 
@@ -21,7 +22,7 @@
 
 #define LOG_TAG  "WifiHAL-ATH6kl"
 
-#include <utils/Log.h>
+#include <log/log.h>
 #include <utils/String8.h>
 
 #include "wifi_hal.h"
